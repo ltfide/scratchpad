@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratchpad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            /* DARK THEME (DEFAULT) */
+            --bg-main: #282828;
+            --bg-sidebar: #222222;
+            --bg-header: #2e2e2e;
+            --bg-menu: #333333;
+            --bg-card: #2f2f2f;
+            --border-color: #3f3f3f;
+            --text-main: #e0e0e0;
+            --text-muted: #8c8c8c;
+            --accent-primary: #5856d6;
+            --accent-hover: #6e6bf0;
+            --danger: #ff453a;
+            --success: #32d74b;
+            
+            /* SCROLLBAR VARS */
+            --scrollbar-thumb: #555555;
+            --scrollbar-thumb-hover: #777777;
+        }
+
+        /* LIGHT THEME VARIABLES (SOFTER / LESS BRIGHT) */
+        body.light-theme {
+            --bg-main: #f5f5f5;
+            --bg-sidebar: #ebebeb;
+            --bg-header: #fafafa;
+            --bg-menu: #ffffff;
+            --bg-card: #ffffff;
+            --border-color: #d4d4d4;
+            --text-main: #2c2c2c;
+            --text-muted: #737373;
+            --scrollbar-thumb: #cbd5e1;
+            --scrollbar-thumb-hover: #94a3b8;
+        }
+
+        /* CUSTOM SCROLLBARS */
+        ::-webkit-scrollbar { width: 8px; height: 8px; } /* Slightly thinner for mobile */
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background-color: var(--scrollbar-thumb); 
+            border-radius: 6px; 
+            border: 2px solid var(--bg-main); 
+        }
+        ::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
+
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg-main);
+            color: var(--text-main); height: 100vh; overflow: hidden; user-select: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- DASHBOARD SCREEN --- */
+        .workspace-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-main); z-index: 9999;
+            display: flex; flex-direction: column;
+        }
+        .workspace-screen.hidden { display: none; }
+
+        .ws-header { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .ws-header-title { font-size: 18px; font-weight: 500; color: var(--text-main); }
+        
+        .ws-header-controls { display: flex; align-items: center; gap: 12px; position: relative; flex-wrap: wrap; justify-content: flex-end;}
+        .ws-search {
+            background-color: var(--bg-main); border: 1px solid var(--border-color);
+            border-radius: 4px; padding: 6px 12px; width: 250px;
+            color: var(--text-main); font-size: 13px; outline: none; transition: border-color 0.2s;
+        }
+        .ws-search:focus { border-color: var(--accent-primary); }
+
+        .btn-create-ws {
+            background-color: var(--bg-main); color: var(--text-main);
+            border: 1px solid var(--border-color); padding: 6px 16px;
+            border-radius: 4px; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .btn-create-ws:hover, .btn-create-ws.active { background-color: var(--border-color); }
+
+        .ws-grid { padding: 20px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; overflow-y: auto; }
+        .ws-card {
+            background-color: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 6px; height: 180px; padding: 16px; cursor: pointer;
+            display: flex; flex-direction: column; position: relative; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .ws-card:hover { border-color: var(--accent-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        .ws-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .ws-badge {
+            background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 4px 8px;
+            border-radius: 4px; font-size: 11px; color: var(--text-main); display: flex; align-items: center; gap: 6px;
+        }
+        .ws-badge-icon { background-color: var(--accent-primary); width: 12px; height: 12px; border-radius: 2px; }
+        .ws-card-title { font-size: 15px; font-weight: 600; color: var(--text-main); word-break: break-word; }
+        .ws-card-footer { margin-top: auto; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+        
+        .ws-card-menu-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; }
+        .ws-card-menu-btn:hover { background-color: var(--border-color); color: var(--text-main); }
+
+        /* Dropdowns */
+        .custom-dropdown {
+            position: absolute; display: none; background-color: var(--bg-menu);
+            border: 1px solid var(--border-color); border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; min-width: 160px; padding: 4px;
+        }
+        .custom-dropdown.show { display: block; }
+        .dropdown-item { padding: 8px 12px; font-size: 13px; color: var(--text-main); cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; transition: background 0.15s; }
+        .dropdown-item:hover { background-color: var(--accent-primary); color: white; }
+        .dropdown-item.action-delete:hover { background-color: var(--danger); color: white; }
+        .dropdown-item.confirm-active { background-color: var(--danger) !important; color: white !important; font-weight: 500; }
+
+        /* --- APP CONTAINER (Main App) --- */
+        .app-container { display: flex; width: 100%; height: 100vh; position: relative; overflow: hidden; }
+        .app-container.hidden { display: none; }
+
+        /* SIDEBAR */
+        .sidebar { 
+            width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; flex-shrink: 0; position: relative; 
+            transition: transform 0.3s ease; /* For mobile sliding */
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; transition: background-color 0.2s;
+        }
+        .sidebar-header:hover { background-color: var(--border-color); }
+        .ws-title-display { font-weight: 600; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        
+        .btn-back-dash { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; display: flex; align-items: center; }
+        .sidebar-header:hover .btn-back-dash { color: var(--text-main); }
+        
+        /* Mobile sidebar toggle button (hidden on desktop) */
+        .mobile-sidebar-toggle {
+            display: none; background: transparent; border: none; color: var(--text-main);
+            font-size: 20px; cursor: pointer; padding: 0 10px; margin-right: 10px;
+        }
+
+        .sidebar-controls { padding: 12px 16px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-color); position: relative; }
+        .search-box { flex: 1; }
+        .search-box input { width: 100%; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; color: var(--text-main); font-size: 13px; outline: none; }
+        .search-box input:focus { border-color: var(--accent-primary); }
+
+        .btn-menu-trigger { background: transparent; border: none; color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+        .btn-menu-trigger:hover, .btn-menu-trigger.active { background-color: var(--border-color); color: var(--text-main); }
+
+        .tab-list { flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+        .folder-container { margin-bottom: 2px; }
+        
+        /* Draggable Styles (BORDER DIHAPUS) */
+        .folder-header, .tab-item { 
+            display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; 
+            border-radius: 4px; cursor: pointer; color: var(--text-muted); font-size: 13px; 
+            position: relative; height: 32px; 
+        }
+        
+        .folder-header:hover, .tab-item:hover { background-color: var(--border-color); color: var(--text-main); }
+        .tab-item.active { background-color: var(--bg-menu); color: var(--text-main); border-radius: 0 4px 4px 0; border-left: 3px solid var(--accent-primary); padding-left: 5px; }
+
+        /* Ganti border drag-over dengan outline agar tidak mengubah tinggi/layout */
+        .drag-over { background-color: var(--border-color) !important; outline: 1px dashed var(--accent-primary); outline-offset: -1px; color: var(--text-main); }
+
+        .folder-info, .tab-info { 
+            display: flex; align-items: center; justify-content: flex-start; gap: 8px; flex: 1; 
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none;
+        }
+        
+        .f-icon { font-size: 14px; display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
+
+        .item-actions-trigger { background: transparent; border: none; color: var(--text-muted); cursor: pointer; width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; pointer-events: none; flex-shrink: 0; transition: opacity 0.1s; }
+        /* Always show menu trigger on mobile */
+        @media (hover: none) {
+            .item-actions-trigger { opacity: 1; pointer-events: auto; }
+        }
+        .folder-header:hover .item-actions-trigger, .tab-item:hover .item-actions-trigger, .item-actions-trigger.active { opacity: 1; pointer-events: auto; }
+        .item-actions-trigger:hover { background-color: var(--border-color); color: var(--text-main); }
+
+        .folder-tabs { display: none; flex-direction: column; gap: 1px; padding-left: 14px; margin-top: 1px; border-left: 1px dashed var(--border-color); margin-left: 10px; }
+        .folder-container.expanded .folder-tabs { display: flex; }
+        .inline-input { background: var(--bg-main); border: 1px solid var(--accent-primary); border-radius: 4px; color: var(--text-main); font-family: inherit; font-size: inherit; width: 90%; outline: none; padding: 2px 6px; }
+
+        /* MAIN CONTENT */
+        .main-content { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-main); height: 100%; min-width: 0; }
+        .main-header { height: 50px; background-color: var(--bg-header); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-wrap: nowrap; overflow-x: auto; /* Allow horizontal scroll for toolbar on very small screens */ scrollbar-width: none; }
+        .main-header::-webkit-scrollbar { display: none; } /* Hide scrollbar for header */
+        
+        /* Container for title and mobile menu */
+        .title-container { display: flex; align-items: center; white-space: nowrap; flex-shrink: 0;}
+        .active-tab-title { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+        
+        .header-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; padding-left: 10px;}
+        
+        /* UNIFORM BUTTONS STYLING */
+        .btn-action { 
+            background-color: var(--bg-main); color: var(--text-main); 
+            border: 1px solid var(--border-color); border-radius: 4px; 
+            font-size: 12px; font-weight: 500; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; gap: 6px; 
+            transition: all 0.2s; 
+            height: 30px; 
+            padding: 0 12px;
+            white-space: nowrap;
+        }
+        
+        #copyBtn, #formatBtn, #minifyBtn, #clearBtn {
+            min-width: 80px; /* Reduced min-width slightly for mobile */
+        }
+
+        .btn-action:hover { background-color: var(--border-color); }
+        .btn-action.btn-primary { background-color: var(--accent-primary); border-color: var(--accent-primary); color: white; }
+        .btn-action.btn-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+
+        .btn-theme-toggle { font-size: 14px; padding: 0 10px; min-width: auto; }
+
+        /* Storage Toggle */
+        .storage-toggle-container { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); margin-right: 10px; border-right: 1px solid var(--border-color); padding-right: 10px; cursor: pointer; white-space: nowrap;}
+        .toggle-switch { position: relative; display: inline-block; width: 28px; height: 14px; pointer-events: none;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #aaa; transition: .2s; border-radius: 14px; }
+        .slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 2px; bottom: 2px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-primary); }
+        input:checked + .slider:before { transform: translateX(14px); }
+
+        .editor-container { flex: 1; padding: 16px; position: relative; overflow: hidden; }
+        .editor-textarea { width: 100%; height: 100%; background-color: transparent; border: none; color: var(--text-main); font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; resize: none; outline: none; padding: 5px; }
+
+        .main-footer { height: 30px; background-color: var(--bg-header); border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 11px; color: var(--text-muted); }
+        .status-indicator { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--text-muted); }
+        .status-dot.valid { background-color: var(--success); box-shadow: 0 0 6px var(--success); }
+
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(0,0,0,0.5); z-index: 90;
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            /* Dashboard Responsive */
+            .ws-header { flex-direction: column; align-items: flex-start; gap: 16px; padding: 20px; }
+            .ws-header-controls { width: 100%; justify-content: flex-start; }
+            .ws-search { width: 100%; flex-basis: 100%; margin-bottom: 8px;}
+            .ws-grid { padding: 20px; grid-template-columns: 1fr; } /* Stack cards vertically */
+            
+            /* Main App Responsive */
+            .sidebar {
+                position: absolute; left: 0; top: 0; height: 100%;
+                transform: translateX(-100%); /* Hidden by default */
+            }
+            .sidebar.active { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            
+            .mobile-sidebar-toggle { display: block; }
+            
+            /* Adjust header controls for smaller screens */
+            .main-header { padding: 0 10px; }
+            .header-controls { gap: 4px; padding-left: 5px; }
+            .storage-toggle-container { margin-right: 5px; padding-right: 5px; }
+            
+            /* Icon only buttons for very small screens if needed */
+            @media (max-width: 500px) {
+                #copyBtn { min-width: auto; }
+                #copyBtn span { display: none; } /* Hide text, keep emoji if wrapping needed */
+                 /* You might want to adjust text in JS to just '📋' or keep as is and let user scroll */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace-screen hidden" id="dashboardScreen">
+        <header class="ws-header">
+            <div class="ws-header-title" id="wsCountTitle">All Files (0)</div>
+            <div class="ws-header-controls">
+                <button class="btn-create-ws" id="exportBtn" title="Export All Storage Data">📤 <span class="hide-mobile-text">Export All</span></button>
+                <button class="btn-create-ws" id="importBtn" title="Import Data (Append Mode)">📥 <span class="hide-mobile-text">Import</span></button>
+                <input type="file" id="importInput" style="display: none;" accept=".json">
+
+                <input type="text" class="ws-search" id="wsSearchInput" placeholder="Filter...">
+                <button class="btn-create-ws" id="createWsMenuBtn">
+                    + Create <span style="font-size: 10px;">▼</span>
+                </button>
+                <div class="custom-dropdown" id="createWsDropdown" style="top: 100%; right: 0; margin-top: 5px;">
+                    <div style="font-size: 10px; color: var(--text-muted); padding: 4px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--border-color);">NEW WORKSPACE</div>
+                    <div class="dropdown-item" id="btnNewScratchpad">📄 Empty Scratchpad</div>
+                    <div class="dropdown-item" id="btnNewProject">📁 Project Collection</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="ws-grid" id="workspaceGrid"></div>
+        <div class="custom-dropdown" id="wsCardDropdown"></div>
+    </div>
+
+    <div class="app-container" id="mainAppContainer">
+        
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" id="btnGoToDashboard" title="View Local Storage (Dashboard)">
+                <div class="ws-title-display">
+                    <button class="btn-back-dash">←</button>
+                    <span id="currentWsName">Unsaved Scratchpad</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-controls">
+                <div class="search-box">
+                    <input type="text" id="searchTabInput" placeholder="Filter...">
+                </div>
+                <button class="btn-menu-trigger" id="globalMenuBtn">⋮</button>
+                <div class="custom-dropdown" id="globalDropdown">
+                    <div class="dropdown-item" id="menuAddRootTab">📄 New Tab</div>
+                    <div class="dropdown-item" id="menuAddFolder">📁 New Folder</div>
+                </div>
+            </div>
+            
+            <div class="tab-list" id="treeContainer"></div>
+        </aside>
+
+        <div class="custom-dropdown" id="itemDropdown"></div>
+
+        <main class="main-content">
+            <header class="main-header">
+                <div class="title-container">
+                    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">☰</button>
+                    <div class="active-tab-title" id="currentTabLabel">Memuat...</div>
+                </div>
+                
+                <div class="header-controls">
+                    
+                    <button class="btn-action btn-theme-toggle" id="themeToggleBtn" title="Toggle Light/Dark Mode">🌞</button>
+                    
+                    <div class="storage-toggle-container" id="storageToggleBtn" title="Save changes to Local Storage">
+                        <span>Save</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="storageToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <button class="btn-action" id="copyBtn">📋 Copy</button>
+                    <button class="btn-action btn-primary" id="formatBtn">Format JSON</button>
+                    <button class="btn-action" id="minifyBtn">Minify</button>
+                    <button class="btn-action" id="clearBtn">Clear</button>
+                </div>
+            </header>
+            
+            <div class="editor-container">
+                <textarea class="editor-textarea" id="editor" placeholder="Paste JSON or text here..." spellcheck="false"></textarea>
+            </div>
+            
+            <footer class="main-footer">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Plain Text</span>
+                </div>
+                <div id="editorStats">Lines: 1 | Characters: 0</div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        const dashboardScreen = document.getElementById('dashboardScreen');
+        const mainAppContainer = document.getElementById('mainAppContainer');
+        const wsCountTitle = document.getElementById('wsCountTitle');
+        const workspaceGrid = document.getElementById('workspaceGrid');
+        const wsSearchInput = document.getElementById('wsSearchInput');
+        const createWsMenuBtn = document.getElementById('createWsMenuBtn');
+        const createWsDropdown = document.getElementById('createWsDropdown');
+        const wsCardDropdown = document.getElementById('wsCardDropdown');
+        const btnGoToDashboard = document.getElementById('btnGoToDashboard');
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+
+        const treeContainer = document.getElementById('treeContainer');
+        const searchTabInput = document.getElementById('searchTabInput');
+        const globalMenuBtn = document.getElementById('globalMenuBtn');
+        const globalDropdown = document.getElementById('globalDropdown');
+        const itemDropdown = document.getElementById('itemDropdown');
+        
+        const editor = document.getElementById('editor');
+        const currentTabLabel = document.getElementById('currentTabLabel');
+        const currentWsName = document.getElementById('currentWsName');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const editorStats = document.getElementById('editorStats');
+        const storageToggleBtn = document.getElementById('storageToggleBtn');
+        const storageToggle = document.getElementById('storageToggle');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+        const STORAGE_KEY = 'dev_workspace_data_v6';
+        let appState = { workspaces: [] };
+        let currentWorkspace = null;
+        let isStorageEnabled = false;
+        let isLightMode = false;
+
+        let draggedNodeId = null;
+        let draggedNodeType = null;
+
+        function initApp() {
+            const savedState = localStorage.getItem(STORAGE_KEY);
+            if (savedState) appState = JSON.parse(savedState);
+            
+            const savedTheme = localStorage.getItem('dev_workspace_theme');
+            if (savedTheme === 'light') toggleTheme(true);
+
+            loadTransientWorkspace();
+            setupEvents(); 
+        }
+
+        // --- THEME & EXPORT HELPERS ---
+        function toggleTheme(forceLight = false) {
+            isLightMode = forceLight || !isLightMode;
+            document.body.classList.toggle('light-theme', isLightMode);
+            themeToggleBtn.textContent = isLightMode ? '🌙' : '🌞';
+            localStorage.setItem('dev_workspace_theme', isLightMode ? 'light' : 'dark');
+        }
+
+        function getExportFilename(prefix = '') {
+            const now = new Date();
+            const pad = n => n.toString().padStart(2, '0');
+            const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+            const prefixStr = prefix ? `_${prefix.replace(/\s+/g, '_').toLowerCase()}` : '';
+            return `ltfidev${prefixStr}_${dateStr}.json`;
+        }
+
+        // --- CORE STORAGE ---
+        function syncStorage() {
+            if (isStorageEnabled && currentWorkspace) {
+                const index = appState.workspaces.findIndex(w => w.id === currentWorkspace.id);
+                currentWorkspace.updatedAt = Date.now();
+                if (index !== -1) appState.workspaces[index] = currentWorkspace;
+                else appState.workspaces.push(currentWorkspace);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            }
+        }
+
+        function loadTransientWorkspace() {
+            currentWorkspace = {
+                id: 'ws_temp_' + Date.now(), name: 'Unsaved Scratchpad', type: 'Scratchpad', updatedAt: Date.now(),
+                folders: [], tabs: [{ id: 't_1', name: 'Draft 1', content: '', folderId: null }], activeTabId: 't_1'
+            };
+            isStorageEnabled = false; storageToggle.checked = false;
+            openMainApp();
+        }
+
+        function openMainApp() {
+            dashboardScreen.classList.add('hidden'); mainAppContainer.classList.remove('hidden');
+            currentWsName.textContent = currentWorkspace.name;
+            renderTree(); loadActiveTabContent();
+        }
+
+        function goToDashboard() {
+            syncStorage(); 
+            mainAppContainer.classList.add('hidden'); dashboardScreen.classList.remove('hidden');
+            renderDashboard();
+        }
+
+        function renderDashboard(filter = '') {
+            workspaceGrid.innerHTML = '';
+            const keyword = filter.toLowerCase();
+            const filtered = appState.workspaces.filter(ws => ws.name.toLowerCase().includes(keyword));
+            wsCountTitle.textContent = `All Files (${filtered.length})`;
+
+            filtered.forEach(ws => {
+                const card = document.createElement('div'); card.className = 'ws-card';
+                card.onclick = () => loadWorkspaceFromStorage(ws.id);
+                card.innerHTML = `
+                    <div class="ws-card-header">
+                        <div class="ws-badge"><div class="ws-badge-icon"></div>${ws.type || 'Collection'}</div>
+                        <button class="ws-card-menu-btn" onclick="openCardMenu(event, '${ws.id}')">⋮</button>
+                    </div>
+                    <div class="ws-card-title">${ws.name}</div>
+                    <div class="ws-card-footer">🕑 ${timeAgo(ws.updatedAt)}</div>
+                `;
+                workspaceGrid.appendChild(card);
+            });
+        }
+
+        function loadWorkspaceFromStorage(id) {
+            const ws = appState.workspaces.find(w => w.id === id);
+            if (ws) { currentWorkspace = ws; isStorageEnabled = true; storageToggle.checked = true; openMainApp(); }
+            // Close sidebar on mobile after selection
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        }
+
+        window.openCardMenu = function(e, id) {
+            e.stopPropagation(); closeAllDropdowns();
+            wsCardDropdown.innerHTML = `
+                <div class="dropdown-item" onclick="exportSingleWorkspace(event, '${id}')">📤 Export</div>
+                <div class="dropdown-item" onclick="renameWorkspace(event, '${id}')">✏️ Rename</div>
+                <div class="dropdown-item action-delete" data-step="initial" onclick="deleteWorkspace(event, this, '${id}')">🗑️ Delete</div>
+            `;
+            const rect = e.target.getBoundingClientRect();
+            wsCardDropdown.style.top = `${rect.bottom + 5}px`; 
+            // Adjust left position to not overflow on mobile
+            let leftPos = rect.left - 130;
+            if (leftPos < 10) leftPos = 10;
+            wsCardDropdown.style.left = `${leftPos}px`;
+            wsCardDropdown.classList.add('show');
+        };
+
+        window.exportSingleWorkspace = function(e, id) {
+            e.stopPropagation(); closeAllDropdowns();
+            const ws = appState.workspaces.find(w => w.id === id);
+            if (!ws) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(ws));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", getExportFilename(ws.name));
+            dlAnchorElem.click();
+        };
+
+        window.renameWorkspace = function(e, id) {
+            e.stopPropagation(); closeAllDropdowns();
+            const ws = appState.workspaces.find(w => w.id === id);
+            if(ws) {
+                const newName = prompt('Rename Workspace:', ws.name);
+                if(newName) { ws.name = newName; localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); renderDashboard(wsSearchInput.value); }
+            }
+        };
+
+        window.deleteWorkspace = function(e, element, id) {
+            e.stopPropagation();
+            if (element.dataset.step === 'initial') {
+                element.textContent = '⚠️ Confirm Delete'; element.classList.add('confirm-active'); element.dataset.step = 'confirm';
+            } else if (element.dataset.step === 'confirm') {
+                appState.workspaces = appState.workspaces.filter(w => w.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); closeAllDropdowns(); renderDashboard(wsSearchInput.value);
+            }
+        };
+
+        document.getElementById('btnNewScratchpad').onclick = () => createNewWorkspaceStorage('Scratchpad');
+        document.getElementById('btnNewProject').onclick = () => createNewWorkspaceStorage('Collection');
+
+        function createNewWorkspaceStorage(type) {
+            closeAllDropdowns(); const name = prompt(`New ${type} Name:`);
+            if (name) {
+                const newWs = {
+                    id: 'ws_' + Date.now(), name, type, updatedAt: Date.now(),
+                    folders: [], tabs: [{ id: 't_1', name: 'Draft', content: '', folderId: null }], activeTabId: 't_1'
+                };
+                appState.workspaces.push(newWs); localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                loadWorkspaceFromStorage(newWs.id);
+            }
+        }
+
+        // --- TREE & DND LOGIC ---
+        function renderTree(filter = '') {
+            if(!currentWorkspace) return;
+            treeContainer.innerHTML = '';
+            const keyword = filter.toLowerCase();
+
+            currentWorkspace.folders.forEach(folder => {
+                const folderTabs = currentWorkspace.tabs.filter(t => t.folderId === folder.id);
+                const isMatch = folderTabs.some(t => t.name.toLowerCase().includes(keyword)) || folder.name.toLowerCase().includes(keyword);
+                if (keyword && !isMatch) return;
+
+                const fEl = document.createElement('div'); fEl.className = `folder-container ${keyword || folder.expanded ? 'expanded' : ''}`;
+                
+                const folderIcon = (keyword || folder.expanded) ? '📂' : '📁';
+
+                const head = document.createElement('div'); 
+                head.className = 'folder-header'; head.dataset.id = folder.id; head.dataset.type = 'folder';
+                head.setAttribute('draggable', 'true'); 
+                
+                head.innerHTML = `<div class="folder-info"><span class="f-icon">${folderIcon}</span> <span>${folder.name}</span></div>
+                                  <button class="item-actions-trigger" onclick="event.stopPropagation(); showItemMenu(event, '${folder.id}', 'folder')">⋮</button>`;
+                
+                head.onclick = (e) => { 
+                    if (!keyword && e.target.tagName !== 'INPUT' && !e.target.classList.contains('item-actions-trigger')) { 
+                        folder.expanded = !folder.expanded; syncStorage(); 
+                        fEl.classList.toggle('expanded', folder.expanded);
+                        head.querySelector('.f-icon').textContent = folder.expanded ? '📂' : '📁';
+                    } 
+                };
+                head.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showItemMenu(e, folder.id, 'folder', true); };
+                setupDnDEvents(head, folder.id, 'folder');
+
+                const tabsCont = document.createElement('div'); tabsCont.className = 'folder-tabs';
+                folderTabs.forEach(tab => { if (!keyword || tab.name.toLowerCase().includes(keyword)) tabsCont.appendChild(createTabNode(tab)); });
+                
+                fEl.append(head, tabsCont); treeContainer.appendChild(fEl);
+            });
+
+            currentWorkspace.tabs.filter(t => t.folderId === null).forEach(tab => {
+                if (!keyword || tab.name.toLowerCase().includes(keyword)) treeContainer.appendChild(createTabNode(tab));
+            });
+        }
+
+        function createTabNode(tab) {
+            const tEl = document.createElement('div');
+            tEl.className = `tab-item ${tab.id === currentWorkspace.activeTabId ? 'active' : ''}`;
+            tEl.dataset.id = tab.id; tEl.dataset.type = 'tab';
+            tEl.setAttribute('draggable', 'true');
+
+            tEl.innerHTML = `<div class="tab-info"><span class="f-icon">📄</span> <span>${tab.name}</span></div>
+                             <button class="item-actions-trigger" onclick="event.stopPropagation(); showItemMenu(event, '${tab.id}', 'tab')">⋮</button>`;
+            
+            tEl.onclick = (e) => { 
+                if (e.target.tagName !== 'INPUT' && !e.target.classList.contains('item-actions-trigger')) {
+                    switchTab(tab.id);
+                    // Close sidebar on mobile after selecting a tab
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                    }
+                }
+            };
+            tEl.ondblclick = (e) => { e.stopPropagation(); triggerInlineRename(tEl.querySelector('.tab-info span:last-child'), tab.id, 'tab'); };
+            tEl.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showItemMenu(e, tab.id, 'tab', true); };
+            
+            setupDnDEvents(tEl, tab.id, 'tab');
+            return tEl;
+        }
+
+        function setupDnDEvents(el, id, type) {
+            // Disable drag and drop on mobile devices to prevent touch scrolling issues
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+
+            el.addEventListener('dragstart', (e) => {
+                draggedNodeId = id; draggedNodeType = type;
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => el.style.opacity = '0.5', 0);
+            });
+            el.addEventListener('dragend', (e) => {
+                el.style.opacity = '1';
+                document.querySelectorAll('.drag-over').forEach(n => n.classList.remove('drag-over'));
+                draggedNodeId = null; draggedNodeType = null;
+            });
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                if(draggedNodeId !== id) el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+            el.addEventListener('drop', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                el.classList.remove('drag-over');
+                if(!draggedNodeId || draggedNodeId === id) return;
+
+                if (draggedNodeType === 'tab' && type === 'folder') {
+                    const tabIndex = currentWorkspace.tabs.findIndex(t => t.id === draggedNodeId);
+                    if(tabIndex > -1) currentWorkspace.tabs[tabIndex].folderId = id;
+                }
+                else if (draggedNodeType === 'tab' && type === 'tab') {
+                    const fromIdx = currentWorkspace.tabs.findIndex(t => t.id === draggedNodeId);
+                    const toIdx = currentWorkspace.tabs.findIndex(t => t.id === id);
+                    if(fromIdx > -1 && toIdx > -1) {
+                        const targetFolderId = currentWorkspace.tabs[toIdx].folderId;
+                        currentWorkspace.tabs[fromIdx].folderId = targetFolderId;
+                        const movedTab = currentWorkspace.tabs.splice(fromIdx, 1)[0];
+                        const insertIdx = toIdx > fromIdx ? toIdx : toIdx;
+                        currentWorkspace.tabs.splice(insertIdx, 0, movedTab);
+                    }
+                }
+                else if (draggedNodeType === 'folder' && type === 'folder') {
+                    const fromIdx = currentWorkspace.folders.findIndex(f => f.id === draggedNodeId);
+                    const toIdx = currentWorkspace.folders.findIndex(f => f.id === id);
+                    if(fromIdx > -1 && toIdx > -1) {
+                        const movedFolder = currentWorkspace.folders.splice(fromIdx, 1)[0];
+                        const insertIdx = toIdx > fromIdx ? toIdx : toIdx;
+                        currentWorkspace.folders.splice(insertIdx, 0, movedFolder);
+                    }
+                }
+                syncStorage(); renderTree(searchTabInput.value);
+            });
+        }
+
+        treeContainer.addEventListener('dragover', (e) => e.preventDefault());
+        treeContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (draggedNodeType === 'tab' && e.target === treeContainer) {
+                const tabIndex = currentWorkspace.tabs.findIndex(t => t.id === draggedNodeId);
+                if(tabIndex > -1) {
+                    currentWorkspace.tabs[tabIndex].folderId = null;
+                    syncStorage(); renderTree(searchTabInput.value);
+                }
+            }
+        });
+
+        // --- MENU HELPERS ---
+        function triggerInlineRename(element, id, type) {
+            if(!element) return;
+            const oldName = element.textContent;
+            const input = document.createElement('input');
+            input.className = 'inline-input'; input.value = oldName;
+            element.replaceWith(input); input.focus(); input.select();
+
+            const commitRename = () => {
+                const newName = input.value.trim() || oldName;
+                if (type === 'folder') {
+                    const f = currentWorkspace.folders.find(fold => fold.id === id); if (f) f.name = newName;
+                } else {
+                    const t = currentWorkspace.tabs.find(tb => tb.id === id);
+                    if (t) { t.name = newName; if (id === currentWorkspace.activeTabId) currentTabLabel.textContent = newName; }
+                }
+                syncStorage(); renderTree(searchTabInput.value);
+            };
+            input.onblur = commitRename; input.onkeydown = (e) => { if (e.key === 'Enter') commitRename(); };
+        }
+
+        window.showItemMenu = function(e, id, type, isRightClick = false) {
+            closeAllDropdowns();
+            let menuHTML = type === 'folder' ? `<div class="dropdown-item" onclick="event.stopPropagation(); closeAllDropdowns(); addTab('${id}')">📄 New Tab</div>` : '';
+            menuHTML += `<div class="dropdown-item" onclick="event.stopPropagation(); closeAllDropdowns(); triggerMenuRename('${id}', '${type}')">✏️ Rename</div>`;
+            menuHTML += `<div class="dropdown-item action-delete" data-step="initial" onclick="executeMenuDelete(event, this, '${id}', '${type}')">🗑️ Delete</div>`;
+            
+            itemDropdown.innerHTML = menuHTML;
+            if (isRightClick) {
+                itemDropdown.style.top = `${e.clientY}px`; itemDropdown.style.left = `${e.clientX}px`;
+            } else {
+                const rect = e.target.getBoundingClientRect();
+                itemDropdown.style.top = `${rect.bottom + 5}px`; 
+                // Adjust position for mobile if too close to right edge
+                let leftPos = rect.left - 100;
+                if (leftPos < 10) leftPos = 10;
+                itemDropdown.style.left = `${leftPos}px`;
+                e.target.classList.add('active');
+            }
+            itemDropdown.classList.add('show');
+        };
+
+        window.triggerMenuRename = function(id, type) {
+            const selector = type === 'folder' 
+                ? `.folder-header[data-id="${id}"] .folder-info span:last-child`
+                : `.tab-item[data-id="${id}"] .tab-info span:last-child`;
+            const el = document.querySelector(selector);
+            if(el) triggerInlineRename(el, id, type);
+        };
+
+        window.executeMenuDelete = function(e, element, id, type) {
+            e.stopPropagation();
+            if (element.dataset.step === 'initial') {
+                element.textContent = '⚠️ Confirm Delete'; element.classList.add('confirm-active'); element.dataset.step = 'confirm';
+            } else if (element.dataset.step === 'confirm') {
+                if (type === 'folder') {
+                    currentWorkspace.tabs = currentWorkspace.tabs.filter(t => t.folderId !== id); 
+                    currentWorkspace.folders = currentWorkspace.folders.filter(f => f.id !== id);
+                } else {
+                    currentWorkspace.tabs = currentWorkspace.tabs.filter(t => t.id !== id);
+                }
+                if (!currentWorkspace.tabs.find(t => t.id === currentWorkspace.activeTabId)) {
+                    currentWorkspace.activeTabId = currentWorkspace.tabs.length > 0 ? currentWorkspace.tabs[0].id : null;
+                }
+                syncStorage(); closeAllDropdowns(); renderTree(searchTabInput.value); loadActiveTabContent();
+            }
+        };
+
+        function addTab(folderId = null) {
+            saveCurrentContent();
+            const newId = 't_' + Date.now();
+            currentWorkspace.tabs.push({ id: newId, name: 'New File', content: '', folderId: folderId });
+            if (folderId) { const f = currentWorkspace.folders.find(fold => fold.id === folderId); if (f) f.expanded = true; }
+            currentWorkspace.activeTabId = newId; syncStorage(); renderTree(searchTabInput.value); loadActiveTabContent(); editor.focus();
+        }
+
+        function addFolder() {
+            currentWorkspace.folders.push({ id: 'f_' + Date.now(), name: 'New Folder', expanded: true });
+            syncStorage(); renderTree(searchTabInput.value);
+        }
+
+        function switchTab(id) { 
+            saveCurrentContent(); currentWorkspace.activeTabId = id; syncStorage(); 
+            document.querySelectorAll('.tab-item').forEach(el => {
+                if(el.dataset.id === id) el.classList.add('active'); else el.classList.remove('active');
+            });
+            loadActiveTabContent(); 
+        }
+
+        function loadActiveTabContent() {
+            if(!currentWorkspace) return;
+            const activeTab = currentWorkspace.tabs.find(t => t.id === currentWorkspace.activeTabId);
+            if (activeTab) { editor.value = activeTab.content; currentTabLabel.textContent = activeTab.name; editor.disabled = false; }
+            else { editor.value = ''; currentTabLabel.textContent = 'No Active Tab'; editor.disabled = true; }
+            validateData();
+        }
+
+        function saveCurrentContent() {
+            if(!currentWorkspace) return;
+            const activeTab = currentWorkspace.tabs.find(t => t.id === currentWorkspace.activeTabId);
+            if (activeTab) { activeTab.content = editor.value; syncStorage(); }
+        }
+
+        function validateData() {
+            const val = editor.value.trim();
+            const lines = val ? val.split('\n').length : 1;
+            editorStats.textContent = `Lines: ${lines} | Characters: ${val.length}`;
+            
+            if (!val) { statusDot.className = 'status-dot'; statusText.textContent = 'Empty'; return; }
+            try { JSON.parse(val); statusDot.className = 'status-dot valid'; statusText.textContent = 'JSON Valid'; } 
+            catch { statusDot.className = 'status-dot'; statusText.textContent = 'Plain Text / Log'; }
+        }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('show'));
+            document.querySelectorAll('.btn-menu-trigger, .item-actions-trigger').forEach(b => b.classList.remove('active'));
+        }
+
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((new Date() - timestamp) / 1000);
+            let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60; if (interval > 1) return Math.floor(interval) + " minutes ago";
+            return Math.floor(seconds) + " seconds ago";
+        }
+
+        function setupEvents() {
+            document.addEventListener('click', closeAllDropdowns);
+            
+            // Mobile Sidebar Toggle
+            mobileSidebarToggle.onclick = (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            };
+            
+            sidebarOverlay.onclick = () => {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            };
+
+            btnGoToDashboard.onclick = goToDashboard;
+            wsSearchInput.addEventListener('input', (e) => renderDashboard(e.target.value));
+            createWsMenuBtn.onclick = (e) => { e.stopPropagation(); createWsDropdown.classList.toggle('show'); };
+            
+            // EXPORT / IMPORT LOGIC
+            document.getElementById('exportBtn').onclick = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+                const dlAnchorElem = document.createElement('a');
+                dlAnchorElem.setAttribute("href", dataStr);
+                dlAnchorElem.setAttribute("download", getExportFilename());
+                dlAnchorElem.click();
+            };
+
+            document.getElementById('importBtn').onclick = () => document.getElementById('importInput').click();
+
+            document.getElementById('importInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        const importedData = JSON.parse(evt.target.result);
+                        let importedCount = 0;
+
+                        if (importedData.workspaces && Array.isArray(importedData.workspaces)) {
+                            importedData.workspaces.forEach(ws => {
+                                ws.id = 'ws_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                                appState.workspaces.push(ws);
+                                importedCount++;
+                            });
+                        } 
+                        else if (importedData.id && importedData.tabs && Array.isArray(importedData.folders)) {
+                            const ws = importedData;
+                            ws.id = 'ws_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                            appState.workspaces.push(ws);
+                            importedCount++;
+                        } else {
+                            alert('JSON format is unrecognized or invalid.');
+                            return;
+                        }
+
+                        if(importedCount > 0) {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                            alert(`${importedCount} Workspace(s) added successfully (Appended)!`);
+                            renderDashboard(wsSearchInput.value);
+                        }
+                    } catch (err) { alert('Failed to read or parse JSON file.'); }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+
+            // SIDEBAR LOGIC
+            globalMenuBtn.onclick = (e) => { 
+                e.stopPropagation(); 
+                globalDropdown.classList.toggle('show'); 
+                globalMenuBtn.classList.toggle('active');
+                
+                // Adjust dropdown position for mobile
+                if (window.innerWidth <= 768) {
+                    globalDropdown.style.left = 'auto';
+                    globalDropdown.style.right = '10px';
+                }
+            };
+            document.getElementById('menuAddRootTab').onclick = () => { closeAllDropdowns(); addTab(null); };
+            document.getElementById('menuAddFolder').onclick = () => { closeAllDropdowns(); addFolder(); };
+            searchTabInput.addEventListener('input', (e) => renderTree(e.target.value));
+
+            // THEME TOGGLE
+            themeToggleBtn.onclick = () => toggleTheme();
+
+            // EDITOR LOGIC
+            editor.addEventListener('input', () => { validateData(); saveCurrentContent(); });
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault(); const s = this.selectionStart, end = this.selectionEnd;
+                    this.value = this.value.substring(0, s) + "    " + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = s + 4; saveCurrentContent(); validateData();
+                }
+            });
+
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(editor.value);
+                    const originalText = copyBtn.innerHTML; copyBtn.innerHTML = '✅ Copied!';
+                    setTimeout(() => copyBtn.innerHTML = originalText, 1500);
+                } catch (err) { alert('Failed to copy text!'); }
+            };
+
+            document.getElementById('formatBtn').onclick = () => {
+                try { editor.value = JSON.stringify(JSON.parse(editor.value.trim()), null, 4); validateData(); saveCurrentContent(); } catch { alert('Error: Text is not valid JSON.'); }
+            };
+
+            document.getElementById('minifyBtn').onclick = () => {
+                try { editor.value = JSON.stringify(JSON.parse(editor.value.trim())); validateData(); saveCurrentContent(); } catch { alert('Error: Text is not valid JSON.'); }
+            };
+
+            document.getElementById('clearBtn').onclick = () => { editor.value = ''; validateData(); saveCurrentContent(); };
+
+            storageToggleBtn.onclick = () => {
+                isStorageEnabled = !isStorageEnabled; storageToggle.checked = isStorageEnabled;
+                if (isStorageEnabled) syncStorage();
+            };
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
